@@ -1,0 +1,72 @@
+# Optimizing Context Consumption with Selectors
+
+## Problem
+
+React’s Context API re-renders all consumers when any value in the context changes, even if the consumer only needs a small part. In large apps, this can affect performance.
+
+## Solution: Context Selector Pattern
+
+A custom hook `useContextSelector` lets you select only the value you need.
+
+```javascript
+import React, { createContext, useContext, useRef, useSyncExternalStore } from "react";
+
+// Create context
+const AppContext = createContext();
+
+// Provider example
+export function AppProvider({ children }) {
+  const [user, setUser] = React.useState({ name: "Jane", age: 25 });
+  const [theme, setTheme] = React.useState("light");
+
+  const store = useRef({ user, theme, setUser, setTheme });
+  store.current = { user, theme, setUser, setTheme };
+
+  return (
+    <AppContext.Provider value={store}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// useContextSelector hook
+export function useContextSelector(selector) {
+  const store = useContext(AppContext);
+  const getSnapshot = () => selector(store.current);
+
+  // This only re-renders when the selected value changes
+  return useSyncExternalStore(
+    (cb) => {
+      // naive implementation; use event emitter for production
+      return () => {};
+    },
+    getSnapshot,
+    getSnapshot
+  );
+}
+
+// Usage example
+
+function UserName() {
+  // Only re-renders when user.name changes
+  const name = useContextSelector(ctx => ctx.user.name);
+  return <div>User: {name}</div>;
+}
+
+function ThemeDisplay() {
+  // Only re-renders when theme changes
+  const theme = useContextSelector(ctx => ctx.theme);
+  return <div>Theme: {theme}</div>;
+}
+```
+
+## Benefits
+
+- Prevents unnecessary re-renders
+- Improves performance in large apps
+- Easy to use with existing Context API
+
+## References
+
+- [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore)
+- [Context Selector RFC](https://github.com/reactjs/rfcs/pull/119)
