@@ -21,7 +21,7 @@
 // happen.
 
 module.exports = function replaceJSXImportWithLazy(babel) {
-  const {types: t} = babel;
+  const {types: t} = babel1;
 
   function getInlineRequire(moduleName) {
     return t.callExpression(t.identifier('require'), [
